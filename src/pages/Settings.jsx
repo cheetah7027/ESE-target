@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Card } from '../components/common/Card';
 import { Icon } from '../components/common/Icon';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 export const Settings = () => {
   const { settings, setSettings, exportAppData, importAppData, resetAllProgress } = useApp();
@@ -182,6 +183,25 @@ export const Settings = () => {
             <h2 className="font-bold text-black text-base pb-3 border-b border-black tracking-wide">
               Data Backup & Sync
             </h2>
+
+            {/* Supabase Status Indicator */}
+            <div className="mt-3 p-3 bg-white border border-black" style={{ borderRadius: '4px' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-black">Cloud Storage (Supabase)</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 border ${
+                  isSupabaseConfigured
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-black border-black'
+                }`} style={{ borderRadius: '4px' }}>
+                  {isSupabaseConfigured ? 'CONNECTED' : 'LOCAL STORAGE MODE'}
+                </span>
+              </div>
+              <p className="text-[11px] text-black mt-1 font-medium">
+                {isSupabaseConfigured
+                  ? 'Your progress is connected to Supabase for multi-device cloud sync.'
+                  : 'Currently storing progress locally. Add VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY to .env for multi-device cloud sync.'}
+              </p>
+            </div>
 
             <div className="mt-4 space-y-3">
               <button
