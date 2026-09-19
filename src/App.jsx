@@ -5,7 +5,7 @@ import { MobileNavbar } from './components/layout/MobileNavbar';
 import { QuickAddModal } from './components/layout/QuickAddModal';
 import { PomodoroTimerModal } from './components/timer/PomodoroTimerModal';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
-import { UserAuthModal } from './components/auth/UserAuthModal';
+import { LoginScreen } from './components/auth/LoginScreen';
 import { Icon } from './components/common/Icon';
 
 // Pages
@@ -25,12 +25,16 @@ import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
 
 const MainLayout = () => {
-  const { userName, setUserName, existingUsers, isAuthOpen, setIsAuthOpen } = useApp();
+  const { isAuthenticated, handleLogin } = useApp();
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [selectedSubjectId, setSelectedSubjectId] = useState('som');
 
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isTimerOpen, setIsTimerOpen] = useState(false);
+
+  if (!isAuthenticated) {
+    return <LoginScreen onLoginSuccess={handleLogin} />;
+  }
 
   const handleSelectSubject = (subId) => {
     setSelectedSubjectId(subId);
@@ -119,15 +123,6 @@ const MainLayout = () => {
       {/* Modals */}
       <QuickAddModal isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} />
       <PomodoroTimerModal isOpen={isTimerOpen} onClose={() => setIsTimerOpen(false)} />
-      <UserAuthModal
-        isOpen={isAuthOpen}
-        currentUserName={userName}
-        onSelectUser={(name) => {
-          setUserName(name);
-          setIsAuthOpen(false);
-        }}
-        existingUsers={existingUsers}
-      />
       <OnboardingWizard />
     </div>
   );

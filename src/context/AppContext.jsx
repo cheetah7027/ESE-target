@@ -26,27 +26,21 @@ const getStored = (key, fallback) => {
 };
 
 export const AppProvider = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('ese_2027_auth_active') === 'true');
   const [userName, setUserNameState] = useState(() => localStorage.getItem('ese_2027_current_user') || 'Ashwani');
-  const [existingUsers, setExistingUsers] = useState(() => {
-    const list = getStored('ese_2027_user_list', ['Ashwani']);
-    return list;
-  });
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
 
-  const setUserName = (name) => {
+  const handleLogin = (name) => {
     if (!name) return;
     const trimmed = name.trim();
     setUserNameState(trimmed);
     localStorage.setItem('ese_2027_current_user', trimmed);
-    setExistingUsers(prev => {
-      if (!prev.includes(trimmed)) {
-        const updated = [...prev, trimmed];
-        localStorage.setItem('ese_2027_user_list', JSON.stringify(updated));
-        return updated;
-      }
-      return prev;
-    });
-    setIsAuthOpen(false);
+    localStorage.setItem('ese_2027_auth_active', 'true');
+    setIsAuthenticated(true);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('ese_2027_auth_active');
+    setIsAuthenticated(false);
   };
 
   const [settings, setSettings] = useState(() => getStored(`${STORAGE_KEYS.SETTINGS}_${userName}`, getStored(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS)));
@@ -487,11 +481,10 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider
       value={{
+        isAuthenticated,
         userName,
-        setUserName,
-        existingUsers,
-        isAuthOpen,
-        setIsAuthOpen,
+        handleLogin,
+        logout,
         settings,
         setSettings,
         subjects,

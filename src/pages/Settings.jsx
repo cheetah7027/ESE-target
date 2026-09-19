@@ -5,7 +5,7 @@ import { Icon } from '../components/common/Icon';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 export const Settings = () => {
-  const { settings, setSettings, exportAppData, importAppData, resetAllProgress } = useApp();
+  const { settings, setSettings, exportAppData, importAppData, resetAllProgress, userName, logout } = useApp();
 
   const [formData, setFormData] = useState({
     examDate: settings.examDate || '2027-01-10',
@@ -228,6 +228,20 @@ export const Settings = () => {
                 </p>
               )}
             </div>
+          </Card>
+
+          {/* Active Aspirant Session & Logout */}
+          <Card className="border border-black bg-white">
+            <h2 className="font-bold text-black text-base pb-1 tracking-wide">Active Aspirant Session</h2>
+            <p className="text-xs text-black mb-3">Currently logged in as <strong className="font-black">{userName}</strong>.</p>
+            <button
+              onClick={logout}
+              className="w-full py-2.5 px-4 bg-white hover:bg-black hover:text-white text-black font-bold text-xs border border-black flex items-center justify-center gap-2 transition-colors tracking-wider"
+              style={{ borderRadius: '4px' }}
+            >
+              <Icon name="logout" className="text-sm" />
+              <span>Log Out of Session</span>
+            </button>
           </Card>
 
           <Card className="border border-black bg-white">
