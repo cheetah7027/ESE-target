@@ -4,6 +4,8 @@ import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
+  const { userName, logout } = useApp();
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
     { id: 'roadmap', label: 'Roadmap', iconName: 'account_tree' },
@@ -58,14 +60,24 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
       </nav>
 
       {/* Bottom Action Footer */}
-      <div className="p-3 border-t border-white">
+      <div className="p-3 border-t border-white space-y-2">
         <button
           onClick={onOpenTimer}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white text-black hover:bg-black hover:text-white font-black text-xs border border-white transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white text-black hover:bg-black hover:text-white font-black text-xs border border-white transition-colors"
           style={{ borderRadius: '4px' }}
         >
           <Icon name="timer" />
           <span>Study Focus Timer</span>
+        </button>
+
+        <button
+          onClick={logout}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-black text-white hover:bg-white hover:text-black font-extrabold text-xs border border-white transition-colors"
+          style={{ borderRadius: '4px' }}
+          title={`Log out of ${userName}`}
+        >
+          <Icon name="logout" className="text-sm" />
+          <span>Log Out ({userName})</span>
         </button>
       </div>
     </aside>

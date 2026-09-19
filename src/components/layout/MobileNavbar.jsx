@@ -4,7 +4,7 @@ import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const MobileNavbar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
-  const { userName, setIsAuthOpen } = useApp();
+  const { userName, logout } = useApp();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const primaryBottomTabs = [
@@ -66,6 +66,14 @@ export const MobileNavbar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
             title="Settings"
           >
             <Icon name="settings" />
+          </button>
+          <button
+            onClick={logout}
+            className="p-2 bg-black border border-white text-white hover:bg-white hover:text-black transition-colors"
+            style={{ borderRadius: '4px' }}
+            title={`Log Out (${userName})`}
+          >
+            <Icon name="logout" />
           </button>
         </div>
       </header>
