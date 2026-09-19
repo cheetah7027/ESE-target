@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { INITIAL_SETTINGS, CIVIL_SUBJECTS, PAPER_1_SUBJECTS, INITIAL_ROADMAP, INITIAL_SESSIONS } from '../data/initialData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const AppContext = createContext();
 
@@ -77,6 +78,23 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MOCKS}_${userName}`, JSON.stringify(mockTests)); }, [mockTests, userName]);
   useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MAINS}_${userName}`, JSON.stringify(mainsPractice)); }, [mainsPractice, userName]);
   useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.ROADMAP}_${userName}`, JSON.stringify(roadmap)); }, [roadmap, userName]);
+
+  // Auto-sync active profile to Supabase database
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase && userName) {
+      supabase.from('ese_profiles').upsert([
+        { user_name: userName }
+      ], { onConflict: 'user_name' })
+      .then(({ error }) => {
+        if (error) {
+          console.error('Supabase profile sync error:', error.message);
+        } else {
+          console.log('Successfully synced profile to Supabase:', userName);
+        }
+      })
+      .catch(err => console.warn('Supabase sync warning:', err));
+    }
+  }, [userName]);
 
   // Dark mode class toggle on root html element
   useEffect(() => {
