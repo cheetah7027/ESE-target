@@ -4,8 +4,6 @@ import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
-  const { settings, userName, setIsAuthOpen } = useApp();
-
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
     { id: 'roadmap', label: 'Roadmap', iconName: 'account_tree' },
@@ -22,11 +20,6 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
     { id: 'settings', label: 'Settings', iconName: 'settings' },
   ];
 
-  const examDate = new Date(settings.examDate || '2027-01-10');
-  const today = new Date();
-  const diffTime = examDate - today;
-  const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-black bg-black text-white h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
@@ -40,15 +33,6 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
             <p className="text-[10px] text-white font-bold tracking-widest">Preparation HQ</p>
           </div>
         </div>
-      </div>
-
-      {/* Countdown Banner */}
-      <div className="mx-3 mt-3 p-3 bg-black border border-white flex items-center justify-between" style={{ borderRadius: '4px' }}>
-        <div>
-          <span className="text-[10px] font-bold text-white tracking-widest block">Exam Countdown</span>
-          <span className="text-base font-bold text-white">{daysLeft} Days</span>
-        </div>
-        <span className="text-xs text-white font-bold">Jan 2027</span>
       </div>
 
       {/* Navigation Items */}
