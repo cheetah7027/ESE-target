@@ -73,10 +73,29 @@ CREATE TABLE IF NOT EXISTS ese_mock_tests (
   date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
--- Disable RLS for simple name-based public table access
-ALTER TABLE ese_profiles DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ese_settings DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ese_study_sessions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ese_pyq_records DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ese_mistake_logs DISABLE ROW LEVEL SECURITY;
-ALTER TABLE ese_mock_tests DISABLE ROW LEVEL SECURITY;
+-- Enable Row Level Security (RLS) on all tables
+ALTER TABLE ese_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ese_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ese_study_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ese_pyq_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ese_mistake_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ese_mock_tests ENABLE ROW LEVEL SECURITY;
+
+-- Explicit RLS Policies for Anon API access
+DROP POLICY IF EXISTS "Public profiles access" ON ese_profiles;
+CREATE POLICY "Public profiles access" ON ese_profiles FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public settings access" ON ese_settings;
+CREATE POLICY "Public settings access" ON ese_settings FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public sessions access" ON ese_study_sessions;
+CREATE POLICY "Public sessions access" ON ese_study_sessions FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public pyqs access" ON ese_pyq_records;
+CREATE POLICY "Public pyqs access" ON ese_pyq_records FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public mistakes access" ON ese_mistake_logs;
+CREATE POLICY "Public mistakes access" ON ese_mistake_logs FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public mocks access" ON ese_mock_tests;
+CREATE POLICY "Public mocks access" ON ese_mock_tests FOR ALL USING (true) WITH CHECK (true);
