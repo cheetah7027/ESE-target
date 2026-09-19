@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { LogoIcon } from '../common/LogoIcon';
 import { Icon } from '../common/Icon';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured, syncUserProfile, syncAllLocalProfiles } from '../../lib/supabase';
 
 export const LoginScreen = ({ onLoginSuccess }) => {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -36,18 +36,6 @@ export const LoginScreen = ({ onLoginSuccess }) => {
 
   const saveUsersToStorage = (usersObj) => {
     localStorage.setItem('ese_2027_auth_users', JSON.stringify(usersObj));
-  };
-
-  const syncProfileToSupabase = async (profileName) => {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        await supabase.from('ese_profiles').upsert([
-          { user_name: profileName }
-        ], { onConflict: 'user_name' });
-      } catch (err) {
-        console.warn('Supabase profile sync warning:', err);
-      }
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -90,7 +78,8 @@ export const LoginScreen = ({ onLoginSuccess }) => {
         createdAt: new Date().toISOString(),
       };
       saveUsersToStorage(existingUsers);
-      await syncProfileToSupabase(trimmedName);
+      await syncUserProfile(trimmedName);
+      await syncAllLocalProfiles();
       setErrorMsg('');
       onLoginSuccess(trimmedName);
     } else {
@@ -108,7 +97,8 @@ export const LoginScreen = ({ onLoginSuccess }) => {
         return;
       }
 
-      await syncProfileToSupabase(userRecord.displayName || trimmedName);
+      await syncUserProfile(userRecord.displayName || trimmedName);
+      await syncAllLocalProfiles();
       setErrorMsg('');
       onLoginSuccess(userRecord.displayName || trimmedName);
     }

@@ -4,7 +4,7 @@ import { Card } from '../components/common/Card';
 import { StatCard } from '../components/common/StatCard';
 import { Badge } from '../components/common/Badge';
 import { Icon } from '../components/common/Icon';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, syncAllLocalProfiles } from '../lib/supabase';
 
 export const UserManagement = () => {
   const { userName } = useApp();
@@ -14,6 +14,12 @@ export const UserManagement = () => {
 
   const loadAllUsers = async () => {
     setLoading(true);
+
+    // Sync all local accounts to Supabase first
+    if (isSupabaseConfigured && supabase) {
+      await syncAllLocalProfiles();
+    }
+
     let allUsersObj = {};
     try {
       const stored = localStorage.getItem('ese_2027_auth_users');
