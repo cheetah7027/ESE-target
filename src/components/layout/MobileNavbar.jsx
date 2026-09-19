@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const MobileNavbar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
+  const { userName, setIsAuthOpen } = useApp();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const primaryBottomTabs = [
@@ -49,6 +51,15 @@ export const MobileNavbar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-black font-black text-xs border border-white"
+            style={{ borderRadius: '4px' }}
+            title="Switch Aspirant Profile"
+          >
+            <Icon name="person" className="text-sm" />
+            <span className="truncate max-w-[70px]">{userName}</span>
+          </button>
           <button
             onClick={onOpenTimer}
             className="p-2 bg-black border border-white text-white hover:bg-white hover:text-black transition-colors"

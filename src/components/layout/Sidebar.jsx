@@ -4,7 +4,7 @@ import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
-  const { settings } = useApp();
+  const { settings, userName, setIsAuthOpen } = useApp();
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
@@ -40,6 +40,25 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
             <p className="text-[10px] text-white font-bold tracking-widest">Preparation HQ</p>
           </div>
         </div>
+      </div>
+
+      {/* Aspirant Profile Badge */}
+      <div className="mx-3 mt-3 p-2.5 bg-white text-black border border-black flex items-center justify-between" style={{ borderRadius: '4px' }}>
+        <div className="flex items-center gap-2 overflow-hidden">
+          <Icon name="person" className="text-black text-base flex-shrink-0" />
+          <div className="truncate">
+            <span className="text-[9px] font-extrabold text-black uppercase tracking-wider block">Aspirant Profile</span>
+            <span className="text-xs font-black text-black truncate block">{userName}</span>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsAuthOpen(true)}
+          className="p-1 text-black hover:bg-black hover:text-white transition-colors flex-shrink-0"
+          style={{ borderRadius: '4px' }}
+          title="Switch Aspirant Profile"
+        >
+          <Icon name="swap_horiz" className="text-sm" />
+        </button>
       </div>
 
       {/* Countdown Banner */}

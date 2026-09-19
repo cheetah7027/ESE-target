@@ -26,18 +26,41 @@ const getStored = (key, fallback) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [settings, setSettings] = useState(() => getStored(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS));
-  const [subjects, setSubjects] = useState(() => getStored(STORAGE_KEYS.SUBJECTS, CIVIL_SUBJECTS));
-  const [paper1Subjects, setPaper1Subjects] = useState(() => getStored(STORAGE_KEYS.PAPER1, PAPER_1_SUBJECTS));
+  const [userName, setUserNameState] = useState(() => localStorage.getItem('ese_2027_current_user') || 'Ashwani');
+  const [existingUsers, setExistingUsers] = useState(() => {
+    const list = getStored('ese_2027_user_list', ['Ashwani']);
+    return list;
+  });
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  const setUserName = (name) => {
+    if (!name) return;
+    const trimmed = name.trim();
+    setUserNameState(trimmed);
+    localStorage.setItem('ese_2027_current_user', trimmed);
+    setExistingUsers(prev => {
+      if (!prev.includes(trimmed)) {
+        const updated = [...prev, trimmed];
+        localStorage.setItem('ese_2027_user_list', JSON.stringify(updated));
+        return updated;
+      }
+      return prev;
+    });
+    setIsAuthOpen(false);
+  };
+
+  const [settings, setSettings] = useState(() => getStored(`${STORAGE_KEYS.SETTINGS}_${userName}`, getStored(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS)));
+  const [subjects, setSubjects] = useState(() => getStored(`${STORAGE_KEYS.SUBJECTS}_${userName}`, getStored(STORAGE_KEYS.SUBJECTS, CIVIL_SUBJECTS)));
+  const [paper1Subjects, setPaper1Subjects] = useState(() => getStored(`${STORAGE_KEYS.PAPER1}_${userName}`, getStored(STORAGE_KEYS.PAPER1, PAPER_1_SUBJECTS)));
   const [studySessions, setStudySessions] = useState(() => {
-    const stored = getStored(STORAGE_KEYS.SESSIONS, null);
+    const stored = getStored(`${STORAGE_KEYS.SESSIONS}_${userName}`, getStored(STORAGE_KEYS.SESSIONS, null));
     return (stored && stored.length > 0) ? stored : INITIAL_SESSIONS;
   });
-  const [pyqRecords, setPyqRecords] = useState(() => getStored(STORAGE_KEYS.PYQS, []));
-  const [mistakeLogs, setMistakeLogs] = useState(() => getStored(STORAGE_KEYS.MISTAKES, []));
-  const [mockTests, setMockTests] = useState(() => getStored(STORAGE_KEYS.MOCKS, []));
-  const [mainsPractice, setMainsPractice] = useState(() => getStored(STORAGE_KEYS.MAINS, []));
-  const [roadmap, setRoadmap] = useState(() => getStored(STORAGE_KEYS.ROADMAP, INITIAL_ROADMAP));
+  const [pyqRecords, setPyqRecords] = useState(() => getStored(`${STORAGE_KEYS.PYQS}_${userName}`, getStored(STORAGE_KEYS.PYQS, [])));
+  const [mistakeLogs, setMistakeLogs] = useState(() => getStored(`${STORAGE_KEYS.MISTAKES}_${userName}`, getStored(STORAGE_KEYS.MISTAKES, [])));
+  const [mockTests, setMockTests] = useState(() => getStored(`${STORAGE_KEYS.MOCKS}_${userName}`, getStored(STORAGE_KEYS.MOCKS, [])));
+  const [mainsPractice, setMainsPractice] = useState(() => getStored(`${STORAGE_KEYS.MAINS}_${userName}`, getStored(STORAGE_KEYS.MAINS, [])));
+  const [roadmap, setRoadmap] = useState(() => getStored(`${STORAGE_KEYS.ROADMAP}_${userName}`, getStored(STORAGE_KEYS.ROADMAP, INITIAL_ROADMAP)));
   
   // Timer State
   const [timerState, setTimerState] = useState({
@@ -50,16 +73,16 @@ export const AppProvider = ({ children }) => {
     activity: 'Concept',
   });
 
-  // Sync state to local storage
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings)); }, [settings]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SUBJECTS, JSON.stringify(subjects)); }, [subjects]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PAPER1, JSON.stringify(paper1Subjects)); }, [paper1Subjects]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(studySessions)); }, [studySessions]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PYQS, JSON.stringify(pyqRecords)); }, [pyqRecords]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.MISTAKES, JSON.stringify(mistakeLogs)); }, [mistakeLogs]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.MOCKS, JSON.stringify(mockTests)); }, [mockTests]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.MAINS, JSON.stringify(mainsPractice)); }, [mainsPractice]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.ROADMAP, JSON.stringify(roadmap)); }, [roadmap]);
+  // Sync state to local storage with username key
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SETTINGS}_${userName}`, JSON.stringify(settings)); }, [settings, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SUBJECTS}_${userName}`, JSON.stringify(subjects)); }, [subjects, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.PAPER1}_${userName}`, JSON.stringify(paper1Subjects)); }, [paper1Subjects, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SESSIONS}_${userName}`, JSON.stringify(studySessions)); }, [studySessions, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.PYQS}_${userName}`, JSON.stringify(pyqRecords)); }, [pyqRecords, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MISTAKES}_${userName}`, JSON.stringify(mistakeLogs)); }, [mistakeLogs, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MOCKS}_${userName}`, JSON.stringify(mockTests)); }, [mockTests, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MAINS}_${userName}`, JSON.stringify(mainsPractice)); }, [mainsPractice, userName]);
+  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.ROADMAP}_${userName}`, JSON.stringify(roadmap)); }, [roadmap, userName]);
 
   // Dark mode class toggle on root html element
   useEffect(() => {
@@ -464,6 +487,11 @@ export const AppProvider = ({ children }) => {
   return (
     <AppContext.Provider
       value={{
+        userName,
+        setUserName,
+        existingUsers,
+        isAuthOpen,
+        setIsAuthOpen,
         settings,
         setSettings,
         subjects,
