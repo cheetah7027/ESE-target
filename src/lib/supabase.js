@@ -87,3 +87,20 @@ export const syncAllLocalProfiles = async () => {
   }
 };
 
+export const checkSupabaseConnection = async () => {
+  if (!configured || !client) return { ok: false, error: 'Not configured in .env' };
+  try {
+    const { error } = await client.from('ese_profiles').select('id').limit(1);
+    if (error) {
+      if (error.message?.includes('Invalid API key') || error.code === 'PGRST301' || error.status === 401) {
+        return { ok: false, error: 'Invalid Supabase API Key (HTTP 401). Check VITE_SUPABASE_ANON_KEY in .env' };
+      }
+      return { ok: false, error: error.message };
+    }
+    return { ok: true, error: null };
+  } catch (err) {
+    return { ok: false, error: err.message || 'Connection failed' };
+  }
+};
+
+
