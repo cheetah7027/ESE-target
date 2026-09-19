@@ -36,7 +36,7 @@ jobs:
       - name: Build project
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://qkosykawqvjkufbqhvju.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'sb_publishable_TRGmgENK9RkeRKpmLonue3w_jK1oGcSm' }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFrb3N5a2F3cXZqa3VmYnFodmp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4Mzg2NDAsImV4cCI6MjEwNTQxNDY0MH0._nDYi8qGwwsxReog0rkSY23OICBubAliFDvqpjyAe0g' }}
         run: npm run build
 
       - name: Deploy to gh-pages branch
