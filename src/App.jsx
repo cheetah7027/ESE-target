@@ -23,6 +23,7 @@ import { Paper1Tracker } from './pages/Paper1Tracker';
 import { MainsMode } from './pages/MainsMode';
 import { Analytics } from './pages/Analytics';
 import { Settings } from './pages/Settings';
+import { UserManagement } from './pages/UserManagement';
 
 const MainLayout = () => {
   const { isAuthenticated, handleLogin } = useApp();
@@ -84,6 +85,8 @@ const MainLayout = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
+      case 'user-management':
+        return <UserManagement />;
       default:
         return <Dashboard setCurrentTab={setCurrentTab} setSelectedSubjectId={setSelectedSubjectId} onOpenQuickAdd={() => setIsQuickAddOpen(true)} onOpenTimer={() => setIsTimerOpen(true)} />;
     }

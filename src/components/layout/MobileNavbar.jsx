@@ -27,6 +27,10 @@ export const MobileNavbar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
     { id: 'settings', label: 'Settings', iconName: 'settings' },
   ];
 
+  if (userName && userName.toLowerCase() === 'ashwani pratap singh') {
+    moreMenuItems.push({ id: 'user-management', label: 'User Manager', iconName: 'manage_accounts' });
+  }
+
   const handleTabClick = (tabId) => {
     if (tabId === 'more') {
       setIsMoreMenuOpen(prev => !prev);

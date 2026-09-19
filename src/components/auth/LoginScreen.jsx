@@ -11,12 +11,27 @@ export const LoginScreen = ({ onLoginSuccess }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const getUsersFromStorage = () => {
+    let users = {};
     try {
       const stored = localStorage.getItem('ese_2027_auth_users');
-      return stored ? JSON.parse(stored) : {};
+      if (stored) users = JSON.parse(stored);
     } catch (e) {
-      return {};
+      users = {};
     }
+
+    // Always ensure Admin user is seeded
+    const adminKey = 'ashwani pratap singh';
+    if (!users[adminKey]) {
+      users[adminKey] = {
+        displayName: 'Ashwani Pratap Singh',
+        password: 'Ashwani@7027',
+        isAdmin: true,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('ese_2027_auth_users', JSON.stringify(users));
+    }
+
+    return users;
   };
 
   const saveUsersToStorage = (usersObj) => {

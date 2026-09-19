@@ -22,6 +22,10 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
     { id: 'settings', label: 'Settings', iconName: 'settings' },
   ];
 
+  if (userName && userName.toLowerCase() === 'ashwani pratap singh') {
+    navItems.push({ id: 'user-management', label: 'User Manager', iconName: 'manage_accounts' });
+  }
+
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-black bg-black text-white h-screen sticky top-0 z-30 select-none">
       {/* Brand Header */}
