@@ -16,6 +16,19 @@ const STORAGE_KEYS = {
   ROADMAP: 'ese_2027_roadmap',
 };
 
+const isDummySession = (s) => {
+  if (!s) return true;
+  if (s.id && String(s.id).startsWith('sess_init_')) return true;
+  if (
+    s.notes === 'Study session' &&
+    s.questionsSolved === 20 &&
+    s.correctAnswers === 16 &&
+    s.subjectId === 'som' &&
+    s.chapterId === 'som-1'
+  ) return true;
+  return false;
+};
+
 const getStoredUser = (key, name, fallback) => {
   try {
     const userKey = `${key}_${name}`;
@@ -23,7 +36,7 @@ const getStoredUser = (key, name, fallback) => {
     if (item !== null) {
       const parsed = JSON.parse(item);
       if (key === STORAGE_KEYS.SESSIONS && Array.isArray(parsed)) {
-        return parsed.filter(s => !s.id || !s.id.startsWith('sess_init_'));
+        return parsed.filter(s => !isDummySession(s));
       }
       return parsed;
     }
@@ -33,7 +46,7 @@ const getStoredUser = (key, name, fallback) => {
       if (legacyItem !== null) {
         const parsed = JSON.parse(legacyItem);
         if (key === STORAGE_KEYS.SESSIONS && Array.isArray(parsed)) {
-          return parsed.filter(s => !s.id || !s.id.startsWith('sess_init_'));
+          return parsed.filter(s => !isDummySession(s));
         }
         return parsed;
       }
@@ -50,6 +63,11 @@ export const AppProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('ese_2027_auth_active') === 'true');
   const [userName, setUserNameState] = useState(() => localStorage.getItem('ese_2027_current_user') || 'Ashwani');
 
+  const userNameRef = React.useRef(userName);
+  useEffect(() => {
+    userNameRef.current = userName;
+  }, [userName]);
+
   const [settings, setSettings] = useState(() => getStoredUser(STORAGE_KEYS.SETTINGS, userName, INITIAL_SETTINGS));
   const [subjects, setSubjects] = useState(() => getStoredUser(STORAGE_KEYS.SUBJECTS, userName, CIVIL_SUBJECTS));
   const [paper1Subjects, setPaper1Subjects] = useState(() => getStoredUser(STORAGE_KEYS.PAPER1, userName, PAPER_1_SUBJECTS));
@@ -61,6 +79,7 @@ export const AppProvider = ({ children }) => {
   const [roadmap, setRoadmap] = useState(() => getStoredUser(STORAGE_KEYS.ROADMAP, userName, INITIAL_ROADMAP));
 
   const loadUserDataFor = (name) => {
+    userNameRef.current = name;
     setSettings(getStoredUser(STORAGE_KEYS.SETTINGS, name, INITIAL_SETTINGS));
     setSubjects(getStoredUser(STORAGE_KEYS.SUBJECTS, name, CIVIL_SUBJECTS));
     setPaper1Subjects(getStoredUser(STORAGE_KEYS.PAPER1, name, PAPER_1_SUBJECTS));
@@ -75,6 +94,7 @@ export const AppProvider = ({ children }) => {
   const handleLogin = (name) => {
     if (!name) return;
     const trimmed = name.trim();
+    userNameRef.current = trimmed;
     localStorage.setItem('ese_2027_current_user', trimmed);
     localStorage.setItem('ese_2027_auth_active', 'true');
     setUserNameState(trimmed);
@@ -98,16 +118,35 @@ export const AppProvider = ({ children }) => {
     activity: 'Concept',
   });
 
+  // Purge any legacy un-suffixed or contaminated dummy seed session data from localStorage
+  useEffect(() => {
+    try {
+      const keysToClean = [STORAGE_KEYS.SESSIONS, `${STORAGE_KEYS.SESSIONS}_${userName}`];
+      keysToClean.forEach(key => {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (Array.isArray(parsed)) {
+            const cleaned = parsed.filter(s => !isDummySession(s));
+            if (cleaned.length !== parsed.length) {
+              localStorage.setItem(key, JSON.stringify(cleaned));
+            }
+          }
+        }
+      });
+    } catch (e) {}
+  }, [userName]);
+
   // Sync state to local storage with username key
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SETTINGS}_${userName}`, JSON.stringify(settings)); }, [settings, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SUBJECTS}_${userName}`, JSON.stringify(subjects)); }, [subjects, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.PAPER1}_${userName}`, JSON.stringify(paper1Subjects)); }, [paper1Subjects, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.SESSIONS}_${userName}`, JSON.stringify(studySessions)); }, [studySessions, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.PYQS}_${userName}`, JSON.stringify(pyqRecords)); }, [pyqRecords, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MISTAKES}_${userName}`, JSON.stringify(mistakeLogs)); }, [mistakeLogs, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MOCKS}_${userName}`, JSON.stringify(mockTests)); }, [mockTests, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.MAINS}_${userName}`, JSON.stringify(mainsPractice)); }, [mainsPractice, userName]);
-  useEffect(() => { localStorage.setItem(`${STORAGE_KEYS.ROADMAP}_${userName}`, JSON.stringify(roadmap)); }, [roadmap, userName]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.SETTINGS}_${userNameRef.current}`, JSON.stringify(settings)); }, [settings]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.SUBJECTS}_${userNameRef.current}`, JSON.stringify(subjects)); }, [subjects]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.PAPER1}_${userNameRef.current}`, JSON.stringify(paper1Subjects)); }, [paper1Subjects]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.SESSIONS}_${userNameRef.current}`, JSON.stringify(studySessions)); }, [studySessions]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.PYQS}_${userNameRef.current}`, JSON.stringify(pyqRecords)); }, [pyqRecords]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.MISTAKES}_${userNameRef.current}`, JSON.stringify(mistakeLogs)); }, [mistakeLogs]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.MOCKS}_${userNameRef.current}`, JSON.stringify(mockTests)); }, [mockTests]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.MAINS}_${userNameRef.current}`, JSON.stringify(mainsPractice)); }, [mainsPractice]);
+  useEffect(() => { if (userNameRef.current) localStorage.setItem(`${STORAGE_KEYS.ROADMAP}_${userNameRef.current}`, JSON.stringify(roadmap)); }, [roadmap]);
 
   // Auto-sync active profile and all local users to Supabase database
   useEffect(() => {

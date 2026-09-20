@@ -76,8 +76,25 @@ export const UserManagement = () => {
       const uname = u.name;
       const getStoredUser = (k, def) => {
         try {
-          const item = localStorage.getItem(`${k}_${uname}`) || localStorage.getItem(k);
-          return item ? JSON.parse(item) : def;
+          const item = localStorage.getItem(`${k}_${uname}`);
+          if (item !== null) {
+            const parsed = JSON.parse(item);
+            if (k === 'ese_2027_sessions' && Array.isArray(parsed)) {
+              return parsed.filter(s => s && (!s.id || !String(s.id).startsWith('sess_init_')) && s.notes !== 'Study session');
+            }
+            return parsed;
+          }
+          if (uname.toLowerCase().includes('ashwani')) {
+            const legacyItem = localStorage.getItem(k);
+            if (legacyItem !== null) {
+              const parsed = JSON.parse(legacyItem);
+              if (k === 'ese_2027_sessions' && Array.isArray(parsed)) {
+                return parsed.filter(s => s && (!s.id || !String(s.id).startsWith('sess_init_')) && s.notes !== 'Study session');
+              }
+              return parsed;
+            }
+          }
+          return def;
         } catch (e) {
           return def;
         }
