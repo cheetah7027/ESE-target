@@ -4,7 +4,24 @@ import { Icon } from '../common/Icon';
 import { LogoIcon } from '../common/LogoIcon';
 
 export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
-  const { userName, logout } = useApp();
+  const { userName, logout, timerState, getTimeLeftSeconds } = useApp();
+  const [timerBadge, setTimerBadge] = React.useState('');
+
+  React.useEffect(() => {
+    if (!timerState?.isRunning) {
+      setTimerBadge('');
+      return;
+    }
+    const update = () => {
+      const remaining = getTimeLeftSeconds();
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      setTimerBadge(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+    };
+    update();
+    const interval = setInterval(update, 500);
+    return () => clearInterval(interval);
+  }, [timerState?.isRunning, timerState?.targetEndTime]);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
@@ -71,7 +88,7 @@ export const Sidebar = ({ currentTab, setCurrentTab, onOpenTimer }) => {
           style={{ borderRadius: '4px' }}
         >
           <Icon name="timer" />
-          <span>Study Focus Timer</span>
+          <span>{timerBadge ? `Timer (${timerBadge})` : 'Study Focus Timer'}</span>
         </button>
 
         <button

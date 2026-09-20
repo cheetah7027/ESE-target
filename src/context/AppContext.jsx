@@ -107,16 +107,206 @@ export const AppProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
   
-  // Timer State
-  const [timerState, setTimerState] = useState({
-    isOpen: false,
-    duration: 25 * 60, // seconds
-    timeLeft: 25 * 60,
-    isRunning: false,
-    subjectId: '',
-    chapterId: '',
-    activity: 'Concept',
+  // Web Audio API synthesized completion chime
+  const playChimeSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const audioCtx = new AudioCtx();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+      osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.15); // E5
+      osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.3); // G5
+      osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.45); // C6
+
+      gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.0);
+    } catch (e) {}
+  };
+
+  // Persistent Background-Resilient Timer Engine
+  const [timerState, setTimerState] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`ese_2027_timer_${userName}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          durationMinutes: parsed.durationMinutes || 25,
+          isRunning: Boolean(parsed.isRunning),
+          targetEndTime: parsed.targetEndTime || null,
+          pausedTimeLeft: parsed.pausedTimeLeft ?? 25 * 60,
+          subjectId: parsed.subjectId || '',
+          chapterId: parsed.chapterId || '',
+          activity: parsed.activity || 'Concept',
+          notes: parsed.notes || '',
+          isCompleted: Boolean(parsed.isCompleted),
+        };
+      }
+    } catch (e) {}
+    return {
+      durationMinutes: 25,
+      isRunning: false,
+      targetEndTime: null,
+      pausedTimeLeft: 25 * 60,
+      subjectId: '',
+      chapterId: '',
+      activity: 'Concept',
+      notes: '',
+      isCompleted: false,
+    };
   });
+
+  const getTimeLeftSeconds = (state = timerState) => {
+    if (!state.isRunning || !state.targetEndTime) {
+      return state.pausedTimeLeft ?? (state.durationMinutes * 60);
+    }
+    const diffMs = state.targetEndTime - Date.now();
+    return Math.max(0, Math.ceil(diffMs / 1000));
+  };
+
+  // App-level continuous tick, tab title updater, and background tab sync
+  useEffect(() => {
+    if (!timerState.isRunning) {
+      document.title = 'ESE Civil 2027 Preparation HQ';
+      return;
+    }
+
+    const updateTimer = () => {
+      const remaining = getTimeLeftSeconds(timerState);
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      const formatted = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      
+      document.title = `(${formatted}) Study Focus Timer | ESE Civil`;
+
+      if (remaining <= 0) {
+        setTimerState(prev => ({
+          ...prev,
+          isRunning: false,
+          targetEndTime: null,
+          pausedTimeLeft: 0,
+          isCompleted: true,
+        }));
+        playChimeSound();
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try {
+            new Notification('Focus Session Complete! 🎯', {
+              body: `Great job! Your ${timerState.durationMinutes} min focus session is complete. Click to log your hours.`,
+            });
+          } catch (e) {}
+        }
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 500);
+
+    const handleSync = () => {
+      updateTimer();
+    };
+
+    window.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [timerState.isRunning, timerState.targetEndTime, timerState.durationMinutes]);
+
+  // Persist timerState to localStorage
+  useEffect(() => {
+    if (userNameRef.current) {
+      localStorage.setItem(`ese_2027_timer_${userNameRef.current}`, JSON.stringify(timerState));
+    }
+  }, [timerState]);
+
+  const startFocusTimer = (presetMinutes, subjectId, chapterId, activity, notes) => {
+    const mins = presetMinutes || timerState.durationMinutes || 25;
+    const targetEndTime = Date.now() + mins * 60 * 1000;
+
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
+    setTimerState(prev => ({
+      ...prev,
+      durationMinutes: mins,
+      isRunning: true,
+      targetEndTime,
+      pausedTimeLeft: mins * 60,
+      subjectId: subjectId ?? prev.subjectId ?? (subjects[0]?.id || ''),
+      chapterId: chapterId ?? prev.chapterId ?? '',
+      activity: activity ?? prev.activity ?? 'Concept',
+      notes: notes ?? prev.notes ?? '',
+      isCompleted: false,
+    }));
+  };
+
+  const pauseFocusTimer = () => {
+    const remaining = getTimeLeftSeconds();
+    setTimerState(prev => ({
+      ...prev,
+      isRunning: false,
+      targetEndTime: null,
+      pausedTimeLeft: remaining,
+    }));
+  };
+
+  const resumeFocusTimer = () => {
+    const remaining = timerState.pausedTimeLeft ?? (timerState.durationMinutes * 60);
+    const targetEndTime = Date.now() + remaining * 1000;
+    setTimerState(prev => ({
+      ...prev,
+      isRunning: true,
+      targetEndTime,
+    }));
+  };
+
+  const resetFocusTimer = (presetMinutes) => {
+    const mins = presetMinutes || timerState.durationMinutes || 25;
+    setTimerState(prev => ({
+      ...prev,
+      durationMinutes: mins,
+      isRunning: false,
+      targetEndTime: null,
+      pausedTimeLeft: mins * 60,
+      isCompleted: false,
+    }));
+    document.title = 'ESE Civil 2027 Preparation HQ';
+  };
+
+  const finishAndLogTimerSession = (customNotes) => {
+    const elapsedMinutes = Math.max(1, Math.round((timerState.durationMinutes * 60 - getTimeLeftSeconds()) / 60));
+    const hours = parseFloat((elapsedMinutes / 60).toFixed(2));
+
+    addStudySession({
+      subjectId: timerState.subjectId || subjects[0]?.id || 'som',
+      chapterId: timerState.chapterId || '',
+      duration: hours,
+      activity: timerState.activity || 'Concept',
+      notes: customNotes || timerState.notes || `Completed ${elapsedMinutes} min focus session.`,
+    });
+
+    setTimerState(prev => ({
+      ...prev,
+      isRunning: false,
+      targetEndTime: null,
+      pausedTimeLeft: prev.durationMinutes * 60,
+      notes: '',
+      isCompleted: false,
+    }));
+    document.title = 'ESE Civil 2027 Preparation HQ';
+  };
 
   // Purge any legacy un-suffixed or contaminated dummy seed session data from localStorage
   useEffect(() => {
@@ -579,6 +769,12 @@ export const AppProvider = ({ children }) => {
         roadmap,
         timerState,
         setTimerState,
+        getTimeLeftSeconds,
+        startFocusTimer,
+        pauseFocusTimer,
+        resumeFocusTimer,
+        resetFocusTimer,
+        finishAndLogTimerSession,
         calculateOverallProgress,
         getCompletedChaptersCount,
         getTotalChaptersCount,

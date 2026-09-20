@@ -3,65 +3,70 @@ import { useApp } from '../../context/AppContext';
 import { Icon } from '../common/Icon';
 
 export const PomodoroTimerModal = ({ isOpen, onClose }) => {
-  const { subjects, addStudySession } = useApp();
+  const {
+    subjects,
+    timerState,
+    setTimerState,
+    getTimeLeftSeconds,
+    startFocusTimer,
+    pauseFocusTimer,
+    resumeFocusTimer,
+    resetFocusTimer,
+    finishAndLogTimerSession
+  } = useApp();
 
-  const [durationMinutes, setDurationMinutes] = useState(25);
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
+  const [timeLeftDisplay, setTimeLeftDisplay] = useState(() => getTimeLeftSeconds());
+  const [notes, setNotes] = useState(timerState.notes || '');
 
-  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id || '');
-  const [selectedChapterId, setSelectedChapterId] = useState('');
-  const [activity, setActivity] = useState('Concept');
-  const [notes, setNotes] = useState('');
-  const [isCompletedPrompt, setIsCompletedPrompt] = useState(false);
+  const selectedSubjectId = timerState.subjectId || subjects[0]?.id || '';
+  const selectedChapterId = timerState.chapterId || '';
+  const activity = timerState.activity || 'Concept';
 
   const currentSubjectObj = subjects.find(s => s.id === selectedSubjectId);
 
   useEffect(() => {
-    let interval = null;
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && isRunning) {
-      setIsRunning(false);
-      setIsCompletedPrompt(true);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+    const update = () => {
+      setTimeLeftDisplay(getTimeLeftSeconds());
+    };
+    update();
+    const interval = setInterval(update, 500);
+
+    const handleSync = () => {
+      update();
+    };
+
+    window.addEventListener('visibilitychange', handleSync);
+    window.addEventListener('focus', handleSync);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('visibilitychange', handleSync);
+      window.removeEventListener('focus', handleSync);
+    };
+  }, [timerState.isRunning, timerState.targetEndTime, timerState.pausedTimeLeft]);
 
   if (!isOpen) return null;
 
   const handleSelectPreset = (mins) => {
-    setIsRunning(false);
-    setDurationMinutes(mins);
-    setTimeLeft(mins * 60);
+    resetFocusTimer(mins);
   };
 
   const toggleStartPause = () => {
-    setIsRunning(prev => !prev);
+    if (timerState.isRunning) {
+      pauseFocusTimer();
+    } else if (timerState.pausedTimeLeft < timerState.durationMinutes * 60 && timerState.pausedTimeLeft > 0) {
+      resumeFocusTimer();
+    } else {
+      startFocusTimer(timerState.durationMinutes);
+    }
   };
 
   const handleReset = () => {
-    setIsRunning(false);
-    setTimeLeft(durationMinutes * 60);
+    resetFocusTimer(timerState.durationMinutes);
   };
 
   const handleFinishAndSave = () => {
-    const elapsedMinutes = Math.max(1, Math.round((durationMinutes * 60 - timeLeft) / 60));
-    const hours = elapsedMinutes / 60;
-
-    addStudySession({
-      subjectId: selectedSubjectId,
-      chapterId: selectedChapterId,
-      duration: hours,
-      activity,
-      notes: notes || `Completed ${elapsedMinutes} min Pomodoro session.`,
-    });
-
-    setIsRunning(false);
-    setIsCompletedPrompt(false);
-    setTimeLeft(durationMinutes * 60);
+    finishAndLogTimerSession(notes);
     onClose();
   };
 
@@ -82,7 +87,7 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h2 className="font-extrabold text-white text-base">Study Focus Timer</h2>
-              <p className="text-xs text-white font-semibold">Pomodoro technique for Civil prep</p>
+              <p className="text-xs text-white font-semibold">Background-resilient Pomodoro timer</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1 text-white hover:bg-white hover:text-black" style={{ borderRadius: '4px' }}>
@@ -93,14 +98,14 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
         {/* Content */}
         <div className="p-6 text-center bg-white text-black">
           {/* Preset buttons */}
-          {!isRunning && !isCompletedPrompt && (
+          {!timerState.isRunning && !timerState.isCompleted && (
             <div className="flex justify-center gap-2 mb-6">
               {[25, 50, 90].map(mins => (
                 <button
                   key={mins}
                   onClick={() => handleSelectPreset(mins)}
                   className={`px-3.5 py-1.5 text-xs font-bold transition-colors ${
-                    durationMinutes === mins
+                    timerState.durationMinutes === mins
                       ? 'bg-black text-white border border-black'
                       : 'bg-white text-black border border-black hover:bg-black hover:text-white'
                   }`}
@@ -112,14 +117,22 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {/* Completion Banner */}
+          {timerState.isCompleted && (
+            <div className="mb-4 p-3 bg-black text-white text-xs font-bold border border-black flex items-center justify-center gap-2" style={{ borderRadius: '4px' }}>
+              <Icon name="emoji_events" className="text-white text-base" />
+              <span>Session Finished! Review notes and click Finish to log.</span>
+            </div>
+          )}
+
           {/* Big Digital Clock Display */}
           <div className="relative inline-flex items-center justify-center my-2">
             <div className="w-48 h-48 border border-black flex flex-col items-center justify-center bg-white" style={{ borderRadius: '4px' }}>
-              <span className="text-2xl font-bold text-black tracking-tight">
-                {formatTime(timeLeft)}
+              <span className="text-3xl font-black text-black tracking-tight font-mono">
+                {formatTime(timeLeftDisplay)}
               </span>
-              <span className="text-xs font-extrabold text-black mt-1 tracking-widest">
-                {isRunning ? 'Focusing...' : 'Paused'}
+              <span className="text-xs font-extrabold text-black mt-1 tracking-widest uppercase">
+                {timerState.isCompleted ? 'Completed' : (timerState.isRunning ? 'Focusing...' : 'Paused')}
               </span>
             </div>
           </div>
@@ -131,8 +144,8 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
               className="flex items-center gap-2 px-6 py-2.5 text-sm font-black bg-black text-white border border-black hover:bg-white hover:text-black transition-colors"
               style={{ borderRadius: '4px' }}
             >
-              <Icon name={isRunning ? 'pause' : 'play_arrow'} />
-              <span>{isRunning ? 'Pause' : 'Start Focus'}</span>
+              <Icon name={timerState.isRunning ? 'pause' : 'play_arrow'} />
+              <span>{timerState.isRunning ? 'Pause' : 'Start Focus'}</span>
             </button>
 
             <button
@@ -152,10 +165,9 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
               <select
                 value={selectedSubjectId}
                 onChange={(e) => {
-                  setSelectedSubjectId(e.target.value);
-                  setSelectedChapterId('');
+                  setTimerState(prev => ({ ...prev, subjectId: e.target.value, chapterId: '' }));
                 }}
-                className="w-full px-3 py-2 text-xs bg-white border border-black text-black"
+                className="w-full px-3 py-2 text-xs bg-white border border-black text-black font-semibold"
                 style={{ borderRadius: '4px' }}
               >
                 {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -167,8 +179,8 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
                 <label className="block text-xs font-bold text-black mb-1">Chapter</label>
                 <select
                   value={selectedChapterId}
-                  onChange={(e) => setSelectedChapterId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white border border-black text-black"
+                  onChange={(e) => setTimerState(prev => ({ ...prev, chapterId: e.target.value }))}
+                  className="w-full px-3 py-2 text-xs bg-white border border-black text-black font-semibold"
                   style={{ borderRadius: '4px' }}
                 >
                   <option value="">General</option>
@@ -179,8 +191,8 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
                 <label className="block text-xs font-bold text-black mb-1">Activity</label>
                 <select
                   value={activity}
-                  onChange={(e) => setActivity(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white border border-black text-black"
+                  onChange={(e) => setTimerState(prev => ({ ...prev, activity: e.target.value }))}
+                  className="w-full px-3 py-2 text-xs bg-white border border-black text-black font-semibold"
                   style={{ borderRadius: '4px' }}
                 >
                   <option value="Concept">Concept</option>
@@ -197,15 +209,18 @@ export const PomodoroTimerModal = ({ isOpen, onClose }) => {
                 type="text"
                 placeholder="Quick notes on what you accomplished..."
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-white border border-black text-black placeholder:text-black"
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  setTimerState(prev => ({ ...prev, notes: e.target.value }));
+                }}
+                className="w-full px-3 py-2 text-xs bg-white border border-black text-black placeholder:text-black/50 font-semibold"
                 style={{ borderRadius: '4px' }}
               />
             </div>
 
             <button
               onClick={handleFinishAndSave}
-              className="w-full py-2 bg-black hover:bg-white hover:text-black text-white border border-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full py-2 bg-black hover:bg-white hover:text-black text-white border border-black font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors tracking-wider"
               style={{ borderRadius: '4px' }}
             >
               <Icon name="check_circle" className="text-base" />
