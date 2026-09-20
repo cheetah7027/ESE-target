@@ -13,27 +13,7 @@ export const INITIAL_SETTINGS = {
   isOnboarded: false,
 };
 
-export const INITIAL_SESSIONS = (() => {
-  const sessions = [];
-  const today = new Date();
-  const sampleHours = [3.5, 4.0, 2.5, 4.5, 3.0, 5.0, 4.0];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    sessions.push({
-      id: 'sess_init_' + i,
-      date: d.toISOString().split('T')[0],
-      duration: sampleHours[i % sampleHours.length],
-      subjectId: 'som',
-      chapterId: 'som-1',
-      activity: 'Concept',
-      questionsSolved: 20,
-      correctAnswers: 16,
-      notes: 'Study session'
-    });
-  }
-  return sessions;
-})();
+export const INITIAL_SESSIONS = [];
 
 export const CIVIL_SUBJECTS = [
   {

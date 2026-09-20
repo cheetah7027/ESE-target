@@ -16,12 +16,32 @@ const STORAGE_KEYS = {
   ROADMAP: 'ese_2027_roadmap',
 };
 
-const getStored = (key, fallback) => {
+const getStoredUser = (key, name, fallback) => {
   try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
+    const userKey = `${key}_${name}`;
+    const item = localStorage.getItem(userKey);
+    if (item !== null) {
+      const parsed = JSON.parse(item);
+      if (key === STORAGE_KEYS.SESSIONS && Array.isArray(parsed)) {
+        return parsed.filter(s => !s.id || !s.id.startsWith('sess_init_'));
+      }
+      return parsed;
+    }
+
+    if (name && (name.toLowerCase() === 'ashwani' || name.toLowerCase() === 'ashwani pratap singh')) {
+      const legacyItem = localStorage.getItem(key);
+      if (legacyItem !== null) {
+        const parsed = JSON.parse(legacyItem);
+        if (key === STORAGE_KEYS.SESSIONS && Array.isArray(parsed)) {
+          return parsed.filter(s => !s.id || !s.id.startsWith('sess_init_'));
+        }
+        return parsed;
+      }
+    }
+
+    return fallback;
   } catch (err) {
-    console.error(`Error reading ${key} from localStorage`, err);
+    console.error(`Error reading ${key} for user ${name} from localStorage`, err);
     return fallback;
   }
 };
@@ -30,32 +50,42 @@ export const AppProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('ese_2027_auth_active') === 'true');
   const [userName, setUserNameState] = useState(() => localStorage.getItem('ese_2027_current_user') || 'Ashwani');
 
+  const [settings, setSettings] = useState(() => getStoredUser(STORAGE_KEYS.SETTINGS, userName, INITIAL_SETTINGS));
+  const [subjects, setSubjects] = useState(() => getStoredUser(STORAGE_KEYS.SUBJECTS, userName, CIVIL_SUBJECTS));
+  const [paper1Subjects, setPaper1Subjects] = useState(() => getStoredUser(STORAGE_KEYS.PAPER1, userName, PAPER_1_SUBJECTS));
+  const [studySessions, setStudySessions] = useState(() => getStoredUser(STORAGE_KEYS.SESSIONS, userName, []));
+  const [pyqRecords, setPyqRecords] = useState(() => getStoredUser(STORAGE_KEYS.PYQS, userName, []));
+  const [mistakeLogs, setMistakeLogs] = useState(() => getStoredUser(STORAGE_KEYS.MISTAKES, userName, []));
+  const [mockTests, setMockTests] = useState(() => getStoredUser(STORAGE_KEYS.MOCKS, userName, []));
+  const [mainsPractice, setMainsPractice] = useState(() => getStoredUser(STORAGE_KEYS.MAINS, userName, []));
+  const [roadmap, setRoadmap] = useState(() => getStoredUser(STORAGE_KEYS.ROADMAP, userName, INITIAL_ROADMAP));
+
+  const loadUserDataFor = (name) => {
+    setSettings(getStoredUser(STORAGE_KEYS.SETTINGS, name, INITIAL_SETTINGS));
+    setSubjects(getStoredUser(STORAGE_KEYS.SUBJECTS, name, CIVIL_SUBJECTS));
+    setPaper1Subjects(getStoredUser(STORAGE_KEYS.PAPER1, name, PAPER_1_SUBJECTS));
+    setStudySessions(getStoredUser(STORAGE_KEYS.SESSIONS, name, []));
+    setPyqRecords(getStoredUser(STORAGE_KEYS.PYQS, name, []));
+    setMistakeLogs(getStoredUser(STORAGE_KEYS.MISTAKES, name, []));
+    setMockTests(getStoredUser(STORAGE_KEYS.MOCKS, name, []));
+    setMainsPractice(getStoredUser(STORAGE_KEYS.MAINS, name, []));
+    setRoadmap(getStoredUser(STORAGE_KEYS.ROADMAP, name, INITIAL_ROADMAP));
+  };
+
   const handleLogin = (name) => {
     if (!name) return;
     const trimmed = name.trim();
-    setUserNameState(trimmed);
     localStorage.setItem('ese_2027_current_user', trimmed);
     localStorage.setItem('ese_2027_auth_active', 'true');
+    setUserNameState(trimmed);
     setIsAuthenticated(true);
+    loadUserDataFor(trimmed);
   };
 
   const logout = () => {
     localStorage.removeItem('ese_2027_auth_active');
     setIsAuthenticated(false);
   };
-
-  const [settings, setSettings] = useState(() => getStored(`${STORAGE_KEYS.SETTINGS}_${userName}`, getStored(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS)));
-  const [subjects, setSubjects] = useState(() => getStored(`${STORAGE_KEYS.SUBJECTS}_${userName}`, getStored(STORAGE_KEYS.SUBJECTS, CIVIL_SUBJECTS)));
-  const [paper1Subjects, setPaper1Subjects] = useState(() => getStored(`${STORAGE_KEYS.PAPER1}_${userName}`, getStored(STORAGE_KEYS.PAPER1, PAPER_1_SUBJECTS)));
-  const [studySessions, setStudySessions] = useState(() => {
-    const stored = getStored(`${STORAGE_KEYS.SESSIONS}_${userName}`, getStored(STORAGE_KEYS.SESSIONS, null));
-    return (stored && stored.length > 0) ? stored : INITIAL_SESSIONS;
-  });
-  const [pyqRecords, setPyqRecords] = useState(() => getStored(`${STORAGE_KEYS.PYQS}_${userName}`, getStored(STORAGE_KEYS.PYQS, [])));
-  const [mistakeLogs, setMistakeLogs] = useState(() => getStored(`${STORAGE_KEYS.MISTAKES}_${userName}`, getStored(STORAGE_KEYS.MISTAKES, [])));
-  const [mockTests, setMockTests] = useState(() => getStored(`${STORAGE_KEYS.MOCKS}_${userName}`, getStored(STORAGE_KEYS.MOCKS, [])));
-  const [mainsPractice, setMainsPractice] = useState(() => getStored(`${STORAGE_KEYS.MAINS}_${userName}`, getStored(STORAGE_KEYS.MAINS, [])));
-  const [roadmap, setRoadmap] = useState(() => getStored(`${STORAGE_KEYS.ROADMAP}_${userName}`, getStored(STORAGE_KEYS.ROADMAP, INITIAL_ROADMAP)));
   
   // Timer State
   const [timerState, setTimerState] = useState({
